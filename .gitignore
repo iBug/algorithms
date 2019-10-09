@@ -1,0 +1,9 @@
+# C
+*.s
+*.o
+*.obj
+*.out
+
+# Binary
+main
+test
