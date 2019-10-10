@@ -15,7 +15,7 @@ unsigned long merge(int* a, int l, int m, int r) {
             i++;
             j++;
         } else {
-            s += m - j;
+            s = (s + m - j) % MOD;
             b[i] = a[k];
             i++;
             k++;
