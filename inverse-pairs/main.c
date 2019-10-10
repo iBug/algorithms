@@ -27,6 +27,7 @@ unsigned long merge(int* a, int l, int m, int r) {
         b[i++] = a[k++];
     for (i = 0; i < r - l; i++)
         a[l + i] = b[i];
+    free(b);
     return s;
 }
 
