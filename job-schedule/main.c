@@ -19,13 +19,14 @@ void dispatch(int d) {
         return;
     }
 
-    int max_k = (d + 1) < k ? d + 1 : k;
-    for (int i = 0; i < max_k; i++) {
+    for (int i = 0; i < k; i++) {
         a[d] = i;
         x[i] += t[d];
         if (x[i] < min_time)
             dispatch(d + 1);
         x[i] -= t[d];
+        if (x[i] == 0)
+            break;
     }
 }
 
