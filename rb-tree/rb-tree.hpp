@@ -25,6 +25,7 @@ namespace iBug {
                        reinterpret_cast<const char*>(&other);
             }
             inline bool operator!=(const Node& other) const { return !(*this == other); }
+            T& operator T(void) const { return key; }
         };
 
         private:
@@ -38,6 +39,8 @@ namespace iBug {
 
         Node& minimum(const Node& x);
         Node& minimum() { return minimum(this->root); };
+        Node& maximum(const Node& x);
+        Node& maximum() { return maximum(this->root); };
 
         RBTree& leftRotate(Node&);
         RBTree& rightRotate(Node&);
@@ -76,6 +79,15 @@ namespace iBug {
         auto *px = &x;
         while (px->left != nil)
             px = px->left;
+        return *px;
+    }
+
+    template <typename T> typename RBTree<T>::Node& RBTree<T>::maximum(const Node& x) {
+        if (&x == nil)
+            return *nil;
+        auto *px = &x;
+        while (px->right != nil)
+            px = px->right;
         return *px;
     }
 
