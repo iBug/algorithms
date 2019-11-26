@@ -44,23 +44,24 @@ namespace iBug {
 
         const Node* getRoot() const { return root; }
 
-        Node& minimum(const Node& x);
-        Node& minimum() { return minimum(this->root); };
-        Node& maximum(const Node& x);
-        Node& maximum() { return maximum(this->root); };
+        Node* minimum(const Node* x);
+        Node* minimum() { return minimum(this->root); };
+        Node* maximum(const Node* x);
+        Node* maximum() { return maximum(this->root); };
 
-        RBTree& leftRotate(Node&);
-        RBTree& rightRotate(Node&);
-        RBTree& insert(Node&);
-        RBTree& insert(const T& value) { return insert(*(new Node(value))); }
-        void insertFixup(Node&);
-        RBTree& transplant(Node&, Node&);
-        RBTree& pop(Node&);
-        void deleteFixup(Node&);
+        RBTree& leftRotate(Node*);
+        RBTree& rightRotate(Node*);
+        RBTree& insert(Node*);
+        RBTree& insert(const T& value) { return insert(new Node(value)); }
+        RBTree& transplant(Node*, Node*);
+        RBTree& pop(Node*);
 
         std::ostream& print(std::ostream&, bool color = false) const;
 
         private:
+        void insertFixup(Node*);
+        void deleteFixup(Node*);
+
         void print(std::ostream&, const Node*, std::vector<int>&, bool) const;
     };
 
@@ -86,215 +87,211 @@ namespace iBug {
         delete nil;
     }
 
-    template <typename T> typename RBTree<T>::Node& RBTree<T>::minimum(const Node& x) {
-        if (&x == nil)
-            return *nil;
-        auto *px = &x;
-        while (px->left != nil)
-            px = px->left;
-        return *px;
+    template <typename T> typename RBTree<T>::Node* RBTree<T>::minimum(const Node* x) {
+        if (x == nil)
+            return nullptr;
+        while (x->left != nil)
+            x = x->left;
+        return x;
     }
 
-    template <typename T> typename RBTree<T>::Node& RBTree<T>::maximum(const Node& x) {
-        if (&x == nil)
-            return *nil;
-        auto *px = &x;
-        while (px->right != nil)
-            px = px->right;
-        return *px;
+    template <typename T> typename RBTree<T>::Node* RBTree<T>::maximum(const Node* x) {
+        if (x == nil)
+            return nullptr;
+        while (x->right != nil)
+            x = x->right;
+        return x;
     }
 
-    template <typename T> RBTree<T>& RBTree<T>::leftRotate(Node& x) {
-        auto &y = *x.right;
-        x.right = y.left;
-        if (y.left != nil)
-            y.left->p = &x;
-        y.p = x.p;
-        if (x.p == nil)
-            root = &y;
-        else if (x == *x.p->left)
-            x.p->left = &y;
+    template <typename T> RBTree<T>& RBTree<T>::leftRotate(Node* x) {
+        auto y = x->right;
+        x->right = y->left;
+        if (y->left != nil)
+            y->left->p = x;
+        y->p = x->p;
+        if (x->p == nil)
+            root = y;
+        else if (x == x->p->left)
+            x->p->left = y;
         else
-            x.p->right = &y;
-        y.left = &x;
-        x.p = &y;
+            x->p->right = y;
+        y->left = x;
+        x->p = y;
         return *this;
     }
 
-    template <typename T> RBTree<T>& RBTree<T>::rightRotate(Node& x) {
-        auto &y = *x.left;
-        x.left = y.right;
-        if (y.right != nil)
-            y.right->p = &x;
-        y.p = x.p;
-        if (x.p == nil)
-            root = &y;
-        else if (x == *x.p->right)
-            x.p->right = &y;
+    template <typename T> RBTree<T>& RBTree<T>::rightRotate(Node* x) {
+        auto y = x->left;
+        x->left = y->right;
+        if (y->right != nil)
+            y->right->p = x;
+        y->p = x->p;
+        if (x->p == nil)
+            root = y;
+        else if (x == x->p->right)
+            x->p->right = y;
         else
-            x.p->left = &y;
-        y.right = &x;
-        x.p = &y;
+            x->p->left = y;
+        y->right = x;
+        x->p = y;
         return *this;
     }
 
-    template <typename T> RBTree<T>& RBTree<T>::insert(Node& z) {
+    template <typename T> RBTree<T>& RBTree<T>::insert(Node* z) {
         auto *y = nil, *x = root;
         while (x != nil) {
             y = x;
-            if (z.key < x->key)
+            if (z->key < x->key)
                 x = x->left;
             else
                 x = x->right;
         }
-        z.p = y;
+        z->p = y;
         if (y == nil)
-            root = &z;
-        else if (z.key < y->key)
-            y->left = &z;
+            root = z;
+        else if (z->key < y->key)
+            y->left = z;
         else
-            y->right = &z;
-        z.left = nil;
-        z.right = nil;
-        z.color = RB_RED;
+            y->right = z;
+        z->left = nil;
+        z->right = nil;
+        z->color = RB_RED;
         insertFixup(z);
         return *this;
     }
 
-    template <typename T> void RBTree<T>::insertFixup(Node& z) {
-        auto *pz = &z;
-        while (pz->p->color == RB_RED) {
-            if (pz->p == pz->p->p->left) {
-                auto &y = pz->p->p->right;
+    template <typename T> void RBTree<T>::insertFixup(Node* z) {
+        while (z->p->color == RB_RED) {
+            if (z->p == z->p->p->left) {
+                auto y = z->p->p->right;
                 if (y->color == RB_RED) {
-                    pz->p->color = RB_BLACK;
+                    z->p->color = RB_BLACK;
                     y->color = RB_BLACK;
-                    pz->p->p->color = RB_RED;
-                    pz = pz->p->p;
+                    z->p->p->color = RB_RED;
+                    z = z->p->p;
                 } else {
-                    if (pz == pz->p->right) {
-                        pz = pz->p;
-                        leftRotate(*pz);
+                    if (z == z->p->right) {
+                        z = z->p;
+                        leftRotate(z);
                     }
-                    pz->p->color = RB_BLACK;
-                    pz->p->p->color = RB_RED;
-                    rightRotate(*pz->p->p);
+                    z->p->color = RB_BLACK;
+                    z->p->p->color = RB_RED;
+                    rightRotate(z->p->p);
                 }
             } else {
-                auto &y = pz->p->p->left;
+                auto y = z->p->p->left;
                 if (y->color == RB_RED) {
-                    pz->p->color = RB_BLACK;
+                    z->p->color = RB_BLACK;
                     y->color = RB_BLACK;
-                    pz->p->p->color = RB_RED;
-                    pz = pz->p->p;
+                    z->p->p->color = RB_RED;
+                    z = z->p->p;
                 } else {
-                    if (pz == pz->p->left) {
-                        pz = pz->p;
-                        rightRotate(*pz);
+                    if (z == z->p->left) {
+                        z = z->p;
+                        rightRotate(z);
                     }
-                    pz->p->color = RB_BLACK;
-                    pz->p->p->color = RB_RED;
-                    leftRotate(*pz->p->p);
+                    z->p->color = RB_BLACK;
+                    z->p->p->color = RB_RED;
+                    leftRotate(z->p->p);
                 }
             }
         }
         root->color = RB_BLACK;
     }
 
-    template <typename T> RBTree<T>& RBTree<T>::transplant(Node& u, Node& v) {
-        if (*u.p == *nil)
+    template <typename T> RBTree<T>& RBTree<T>::transplant(Node* u, Node* v) {
+        if (u->p == nil)
             root = v;
-        else if (u == *u.p->left)
-            u.p->left = v;
+        else if (u == u->p->left)
+            u->p->left = v;
         else
-            u.p->right = v;
-        v.p = u.p;
+            u->p->right = v;
+        v->p = u->p;
     }
 
-    template <typename T> RBTree<T>& RBTree<T>::pop(Node& z) {
-        auto y_original_color = z.color;
-        auto *px = &z;
-        if (z.left == nil) {
-            px = z.right;
-            transplant(z, *z.right);
-        } else if (z.right == nil) {
-            px = z.left;
-            transplant(z, *z.left);
+    template <typename T> RBTree<T>& RBTree<T>::pop(Node* z) {
+        auto y_original_color = z->color;
+        auto x = z;
+        if (z->left == nil) {
+            x = z->right;
+            transplant(z, z->right);
+        } else if (z->right == nil) {
+            x = z->left;
+            transplant(z, z->left);
         } else {
-            auto &y = minimum(z);
-            y_original_color = y.color;
-            auto &x = *y.right;
-            if (y.p == &z)
-                x.p = &y;
+            auto y = minimum(z);
+            y_original_color = y->color;
+            auto x = y->right;
+            if (y->p == z)
+                x->p = y;
             else {
-                transplant(y, *y.right);
-                y.right = z.right;
-                y.right->p = &y;
+                transplant(y, y->right);
+                y->right = z->right;
+                y->right->p = y;
             }
             transplant(z, y);
-            y.left = z.left;
-            y.left->p = &y;
-            y.color = z.color;
+            y->left = z->left;
+            y->left->p = y;
+            y->color = z->color;
         }
         if (y_original_color == RB_BLACK)
-            deleteFixup(*px);
+            deleteFixup(x);
         return *this;
     }
 
-    template <typename T> void RBTree<T>::deleteFixup(Node& x) {
-        auto *px = &x;
-        while (px != root && px->color == RB_BLACK) {
-            if (px == px->p->left) {
-                auto *pw = px->p->right;
+    template <typename T> void RBTree<T>::deleteFixup(Node* x) {
+        while (x != root && x->color == RB_BLACK) {
+            if (x == x->p->left) {
+                auto pw = x->p->right;
                 if (pw->color == RB_RED) {
                     pw->color = RB_BLACK;
-                    px->p->color = RB_RED;
-                    leftRotate(*px->p);
-                    pw = px->p->right;
+                    x->p->color = RB_RED;
+                    leftRotate(x->p);
+                    pw = x->p->right;
                 }
                 if (pw->left->color == RB_BLACK && pw->right->color == RB_BLACK) {
                     pw->color = RB_RED;
-                    px = px->p;
+                    x = x->p;
                 } else {
                     if (pw->right->color == RB_BLACK) {
                         pw->left->color = RB_BLACK;
                         pw->color = RB_RED;
-                        rightRotate(*pw);
-                        pw = px->p->right;
+                        rightRotate(pw);
+                        pw = x->p->right;
                     }
-                    pw->color = px->p->color;
-                    px->p->color = RB_BLACK;
+                    pw->color = x->p->color;
+                    x->p->color = RB_BLACK;
                     pw->right->color = RB_BLACK;
-                    leftRotate(*px->p);
-                    px = root;
+                    leftRotate(x->p);
+                    x = root;
                 }
             } else {
-                auto *pw = px->p->left;
+                auto pw = x->p->left;
                 if (pw->color == RB_RED) {
                     pw->color = RB_BLACK;
-                    px->p->color = RB_RED;
-                    rightRotate(*px->p);
-                    pw = px->p->left;
+                    x->p->color = RB_RED;
+                    rightRotate(x->p);
+                    pw = x->p->left;
                 }
                 if (pw->right->color == RB_BLACK && pw->left->color == RB_BLACK) {
                     pw->color = RB_RED;
-                    px = px->p;
+                    x = x->p;
                 } else {
                     if (pw->left->color == RB_BLACK) {
                         pw->right->color = RB_BLACK;
                         pw->color = RB_RED;
-                        leftRotate(*pw);
-                        pw = px->p->left;
+                        leftRotate(pw);
+                        pw = x->p->left;
                     }
-                    pw->color = px->p->color;
-                    px->p->color = RB_BLACK;
+                    pw->color = x->p->color;
+                    x->p->color = RB_BLACK;
                     pw->left->color = RB_BLACK;
-                    rightRotate(*px->p);
-                    px = root;
+                    rightRotate(x->p);
+                    x = root;
                 }
             }
         }
-        px->color = RB_BLACK;
+        x->color = RB_BLACK;
     }
 
     template <typename T>
