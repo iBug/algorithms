@@ -42,12 +42,17 @@ namespace iBug {
         RBTree(const RBTree<T>&) = delete;
         RBTree& operator=(const RBTree<T>&) = delete;
 
-        const Node* getRoot() const { return root; }
+        Node* getRoot() const { return root; }
+        bool empty() const { return root == nil; }
 
-        Node* minimum(const Node* x);
+        Node* search(Node*, const T&);
+        Node* search(const T& value) { return search(root, value); };
+        Node* minimum(Node*);
         Node* minimum() { return minimum(this->root); };
-        Node* maximum(const Node* x);
+        Node* maximum(Node*);
         Node* maximum() { return maximum(this->root); };
+        Node* predecessor(Node*);
+        Node* successor(Node*);
 
         RBTree& leftRotate(Node*);
         RBTree& rightRotate(Node*);
@@ -87,7 +92,17 @@ namespace iBug {
         delete nil;
     }
 
-    template <typename T> typename RBTree<T>::Node* RBTree<T>::minimum(const Node* x) {
+    template <typename T> typename RBTree<T>::Node* RBTree<T>::search(Node *x, const T& value) {
+        if (x == nil)
+            return nullptr;
+        if (x->key == value)
+            return x;
+        if (x->key < value)
+            return search(x->right, value);
+        return search(x->left, value);
+    }
+
+    template <typename T> typename RBTree<T>::Node* RBTree<T>::minimum(Node* x) {
         if (x == nil)
             return nullptr;
         while (x->left != nil)
@@ -95,12 +110,38 @@ namespace iBug {
         return x;
     }
 
-    template <typename T> typename RBTree<T>::Node* RBTree<T>::maximum(const Node* x) {
+    template <typename T> typename RBTree<T>::Node* RBTree<T>::maximum(Node* x) {
         if (x == nil)
             return nullptr;
         while (x->right != nil)
             x = x->right;
         return x;
+    }
+
+    template <typename T> typename RBTree<T>::Node* RBTree<T>::predecessor(Node* x) {
+        if (x->left != nil)
+            return maximum(x->left);
+        auto *y = x->p;
+        while (y != nil && x == y->left) {
+            x = y;
+            y = y->p;
+        }
+        if (y == nil)
+            return nullptr;
+        return y;
+    }
+
+    template <typename T> typename RBTree<T>::Node* RBTree<T>::successor(Node* x) {
+        if (x->right != nil)
+            return minimum(x->right);
+        auto *y = x->p;
+        while (y != nil && x == y->right) {
+            x = y;
+            y = y->p;
+        }
+        if (y == nil)
+            return nullptr;
+        return y;
     }
 
     template <typename T> RBTree<T>& RBTree<T>::leftRotate(Node* x) {
@@ -207,6 +248,7 @@ namespace iBug {
         else
             u->p->right = v;
         v->p = u->p;
+        return *this;
     }
 
     template <typename T> RBTree<T>& RBTree<T>::pop(Node* z) {
@@ -219,9 +261,9 @@ namespace iBug {
             x = z->left;
             transplant(z, z->left);
         } else {
-            auto y = minimum(z);
+            auto y = minimum(z->right);
             y_original_color = y->color;
-            auto x = y->right;
+            x = y->right;
             if (y->p == z)
                 x->p = y;
             else {
@@ -242,50 +284,50 @@ namespace iBug {
     template <typename T> void RBTree<T>::deleteFixup(Node* x) {
         while (x != root && x->color == RB_BLACK) {
             if (x == x->p->left) {
-                auto pw = x->p->right;
-                if (pw->color == RB_RED) {
-                    pw->color = RB_BLACK;
+                auto w = x->p->right;
+                if (w->color == RB_RED) {
+                    w->color = RB_BLACK;
                     x->p->color = RB_RED;
                     leftRotate(x->p);
-                    pw = x->p->right;
+                    w = x->p->right;
                 }
-                if (pw->left->color == RB_BLACK && pw->right->color == RB_BLACK) {
-                    pw->color = RB_RED;
+                if (w->left->color == RB_BLACK && w->right->color == RB_BLACK) {
+                    w->color = RB_RED;
                     x = x->p;
                 } else {
-                    if (pw->right->color == RB_BLACK) {
-                        pw->left->color = RB_BLACK;
-                        pw->color = RB_RED;
-                        rightRotate(pw);
-                        pw = x->p->right;
+                    if (w->right->color == RB_BLACK) {
+                        w->left->color = RB_BLACK;
+                        w->color = RB_RED;
+                        rightRotate(w);
+                        w = x->p->right;
                     }
-                    pw->color = x->p->color;
+                    w->color = x->p->color;
                     x->p->color = RB_BLACK;
-                    pw->right->color = RB_BLACK;
+                    w->right->color = RB_BLACK;
                     leftRotate(x->p);
                     x = root;
                 }
             } else {
-                auto pw = x->p->left;
-                if (pw->color == RB_RED) {
-                    pw->color = RB_BLACK;
+                auto w = x->p->left;
+                if (w->color == RB_RED) {
+                    w->color = RB_BLACK;
                     x->p->color = RB_RED;
                     rightRotate(x->p);
-                    pw = x->p->left;
+                    w = x->p->left;
                 }
-                if (pw->right->color == RB_BLACK && pw->left->color == RB_BLACK) {
-                    pw->color = RB_RED;
+                if (w->right->color == RB_BLACK && w->left->color == RB_BLACK) {
+                    w->color = RB_RED;
                     x = x->p;
                 } else {
-                    if (pw->left->color == RB_BLACK) {
-                        pw->right->color = RB_BLACK;
-                        pw->color = RB_RED;
-                        leftRotate(pw);
-                        pw = x->p->left;
+                    if (w->left->color == RB_BLACK) {
+                        w->right->color = RB_BLACK;
+                        w->color = RB_RED;
+                        leftRotate(w);
+                        w = x->p->left;
                     }
-                    pw->color = x->p->color;
+                    w->color = x->p->color;
                     x->p->color = RB_BLACK;
-                    pw->left->color = RB_BLACK;
+                    w->left->color = RB_BLACK;
                     rightRotate(x->p);
                     x = root;
                 }
