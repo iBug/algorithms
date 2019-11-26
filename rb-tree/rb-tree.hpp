@@ -5,28 +5,33 @@
 #error "C++11 required"
 #endif // Version check
 
+#include <iostream>
+#include <vector>
 #include <stack>
 
 namespace iBug {
     typedef enum RBColor {RB_BLACK = 0, RB_RED = 1} RBColor;
 
     template <typename T>
+    struct Node {
+        RBColor color;
+        T key;
+        Node *left, *right, *p;
+        Node() : color(RB_BLACK), left(nullptr), right(nullptr), p(nullptr) {};
+        Node(const T& value) : key(value) {}
+        ~Node() = default;
+        bool operator==(const Node& other) const {
+            return reinterpret_cast<const char*>(this) ==
+                   reinterpret_cast<const char*>(&other);
+        }
+        inline bool operator!=(const Node& other) const { return !(*this == other); }
+        operator T&(void) { return key; }
+    };
+
+    template <typename T>
     class RBTree {
-        private:
-        struct Node {
-            RBColor color;
-            T key;
-            Node *left, *right, *p;
-            Node() = default;
-            Node(const T& value) : key(value) {}
-            ~Node() = default;
-            bool operator==(const Node& other) const {
-                return reinterpret_cast<const char*>(this) ==
-                       reinterpret_cast<const char*>(&other);
-            }
-            inline bool operator!=(const Node& other) const { return !(*this == other); }
-            T& operator T(void) const { return key; }
-        };
+        public:
+        using Node = ::iBug::Node<T>;
 
         private:
         Node *nil, *root;
@@ -36,6 +41,8 @@ namespace iBug {
         ~RBTree(void);
         RBTree(const RBTree<T>&) = delete;
         RBTree& operator=(const RBTree<T>&) = delete;
+
+        const Node* getRoot() const { return root; }
 
         Node& minimum(const Node& x);
         Node& minimum() { return minimum(this->root); };
@@ -50,6 +57,11 @@ namespace iBug {
         RBTree& transplant(Node&, Node&);
         RBTree& pop(Node&);
         void deleteFixup(Node&);
+
+        std::ostream& print(std::ostream&, bool color = false) const;
+
+        private:
+        void print(std::ostream&, const Node*, std::vector<int>&, bool) const;
     };
 
     template <typename T> RBTree<T>::RBTree(void) {
@@ -63,7 +75,8 @@ namespace iBug {
         if (root != nil)
             stack.push(root);
         while (!stack.empty()) {
-            auto *top = stack.pop();
+            auto *top = stack.top();
+            stack.pop();
             if (top->left != nil)
                 stack.push(top->left);
             if (top->right != nil)
@@ -95,16 +108,16 @@ namespace iBug {
         auto &y = *x.right;
         x.right = y.left;
         if (y.left != nil)
-            y.left->p = x;
+            y.left->p = &x;
         y.p = x.p;
         if (x.p == nil)
-            root = y;
-        else if (x == x.p->left)
-            x.p->left = y;
+            root = &y;
+        else if (x == *x.p->left)
+            x.p->left = &y;
         else
-            x.p->right = y;
-        y.left = x;
-        x.p = y;
+            x.p->right = &y;
+        y.left = &x;
+        x.p = &y;
         return *this;
     }
 
@@ -112,16 +125,16 @@ namespace iBug {
         auto &y = *x.left;
         x.left = y.right;
         if (y.right != nil)
-            y.right->p = x;
+            y.right->p = &x;
         y.p = x.p;
         if (x.p == nil)
-            root = y;
-        else if (x == x.p->right)
-            x.p->right = y;
+            root = &y;
+        else if (x == *x.p->right)
+            x.p->right = &y;
         else
-            x.p->left = y;
-        y.right = x;
-        x.p = y;
+            x.p->left = &y;
+        y.right = &x;
+        x.p = &y;
         return *this;
     }
 
@@ -153,9 +166,9 @@ namespace iBug {
         while (pz->p->color == RB_RED) {
             if (pz->p == pz->p->p->left) {
                 auto &y = pz->p->p->right;
-                if (y.color == RB_RED) {
+                if (y->color == RB_RED) {
                     pz->p->color = RB_BLACK;
-                    y.color = RB_BLACK;
+                    y->color = RB_BLACK;
                     pz->p->p->color = RB_RED;
                     pz = pz->p->p;
                 } else {
@@ -169,9 +182,9 @@ namespace iBug {
                 }
             } else {
                 auto &y = pz->p->p->left;
-                if (y.color == RB_RED) {
+                if (y->color == RB_RED) {
                     pz->p->color = RB_BLACK;
-                    y.color = RB_BLACK;
+                    y->color = RB_BLACK;
                     pz->p->p->color = RB_RED;
                     pz = pz->p->p;
                 } else {
@@ -184,8 +197,8 @@ namespace iBug {
                     leftRotate(*pz->p->p);
                 }
             }
-            root->color = RB_BLACK;
         }
+        root->color = RB_BLACK;
     }
 
     template <typename T> RBTree<T>& RBTree<T>::transplant(Node& u, Node& v) {
@@ -282,6 +295,38 @@ namespace iBug {
             }
         }
         px->color = RB_BLACK;
+    }
+
+    template <typename T>
+    std::ostream& RBTree<T>::print(std::ostream& os, bool color) const {
+        std::vector<int> v;  // 0 - left, 1 - right
+        print(os, root, v, color);
+        return os;
+    }
+
+    template <typename T>
+    void RBTree<T>::print(std::ostream& os, const Node* node, std::vector<int>& v, bool color) const {
+        if (node && node != nil) {
+            v.push_back(0);
+            print(os, node->left, v, color);
+            v.pop_back();
+            for (int i = 1; i < v.size(); i++) {
+                if (v[i] == v[i - 1])
+                    os << "   ";
+                else
+                    os << "|  ";
+            }
+            if (v.size())
+                os << "+--";
+            if (color) {
+                os << (node->color == RB_BLACK ? "\x1B[1m" : "\x1B[31;1m") << node->key << "\x1B[0m" << std::endl;
+            } else {
+                os << node->key << std::endl;
+            }
+            v.push_back(1);
+            print(os, node->right, v, color);
+            v.pop_back();
+        }
     }
 }
 
