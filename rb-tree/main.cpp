@@ -18,20 +18,20 @@ int main() {
     tree.print(cout, 1);
     for (;;) {
         int num;
-        cerr << "Enter number to delete: ";
+        cout << "Enter number to delete: ";
         cin >> num;
         if (!cin) {
-            cerr << "Exit" << endl;
+            cout << "Exit" << endl;
             return 0;
         }
         auto *node = tree.search(num);
         if (node == nullptr)
-            cerr << "Not found" << endl;
+            cout << "Not found" << endl;
         else {
             tree.pop(node);
             tree.print(cout, 1);
             if (tree.empty()) {
-                cerr << "Nothing left" << endl;
+                cout << "Nothing left" << endl;
                 return 0;
             }
         }
