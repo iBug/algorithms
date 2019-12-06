@@ -93,14 +93,14 @@ int main() {
     int asd = 0;
     for (auto node = intersect; node != source; node = pred[node])
         q.push_back(node);
-    for (auto node = next[intersect]; node != target; node = next[node])
-        q.push_front(node);
-    q.push_front(target);
     cout << source;
     while (!q.empty()) {
         cout << " -> " << q.back();
         q.pop_back();
     }
+    for (auto node = next[intersect]; node != target; node = next[node])
+        cout << " <- " << node;
+    cout << " <- " << target;
     cout << endl;
 
     return 0;
